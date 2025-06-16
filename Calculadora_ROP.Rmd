@@ -13,16 +13,19 @@ Se cargan las librerías necesarias para el desarrollo de la calculadora.
 pacman::p_load(readxl)
 ```
 
-# Datos de las unidades de pensión
+# Datos de sobrevivencia
 
-Se cargan los datos de la VANU para cada sexo y se extraen sus valores.
+Se cargan los datos sobrevivencia ($_tp_x$) para cada sexo y se extraen sus valores.
 
-```{r datos_VANU, message = FALSE, warning = FALSE}
-vanu.h <- read_excel("data/VANUs 2025.xlsx", sheet = "VANU H")
-vanu.m <- read_excel("data/VANUs 2025.xlsx", sheet = "VANU M")
+```{r datos_tpx, message = FALSE, warning = FALSE}
+tpx.h <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia H")
+tpx.m <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia M")
 
-vanu.h <- as.vector(t(vanu.h[9, 4:length(vanu.h)]))
-vanu.m <- as.vector(t(vanu.m[9, 4:length(vanu.m)]))
+tpx.h <- tpx.h[12:nrow(tpx.h), 3:ncol(tpx.h)]
+tpx.m <- tpx.m[12:nrow(tpx.m), 3:ncol(tpx.m)]
+
+colnames(tpx.h) <- 1:ncol(tpx.h)
+colnames(tpx.m) <- 1:ncol(tpx.m)
 ```
 
 # Modalidades de retiro
@@ -39,9 +42,54 @@ r <- 0.036
 monto.min <- 31938.44
 ```
 
+## Cálculo de las unidades de pensión
+
+Primeramente, y con los datos de sobrevivencia cargados, es necesario calcular la VANU para cada sexo y edad.
+
+```{r calculo_VANUs}
+#' @description Función que calcula el VANU para cada edad, considerando las 
+#' probabilidades de sobrevivencia dadas y una tasa de interés técnica.
+#'
+#' @param x Vector con las edades para las que se desea calcular el VANU.
+#' @param n Número de años proyectados para el cálculo.
+#' @param m Frecuencia de pagos por año (12 para pagos mensuales).
+#' @param tpx Matriz de probabilidades de sobrevivencia. Cada columna representa 
+#'            una edad y cada fila un año proyectado.
+#' 
+#' @return Un vector numérico con las VANUs correspondientes a cada edad del vector x.
+#'
+calculo.vanu <- function(x, n, m, tpx){
+  
+  # Se inicializa el vector que contendrá las VANUs
+  vanu <- c()
+  
+  # Se itera sobre cada edad
+  for(edad in x){
+    
+    # Se calcula el VANU mensual para la edad correspondiente
+    vanu <- c(vanu, 12 * (sum(tpx[1:n, edad+1] / (1 + r)^(0:(n-1))) - 
+      ((m-1) / (2*m)) * (1 - (tpx[n+1, edad+1]) / (1 + r)^n)))
+    
+  }
+  
+  # Se retorna el vector de VANUs
+  return(as.numeric(vanu))
+  
+}
+```
+
 ## Retiro programado
 
 En esta modalidad de pensión la persona acuerda recibir una renta periódica que surge de dividir, cada año, el monto acumulado del pensionado entre la VANU correspondiente.
+
+Primero se calculan las VANUs para hombres y mujeres bajo esta modalidad, en la cual el $n$ es la edad máxima (osea el $\omega$), que en este caso es 115.
+
+```{r VANUs_retiro_prgrmd}
+vanu.h <- calculo.vanu(c(0:115), 115, 12, tpx.h)
+vanu.m <- calculo.vanu(c(0:115), 115, 12, tpx.m)
+```
+
+Postriormente se crea la función.
 
 ```{r retiro_prgrmd}
 #' @description Función que simula la modalidad de retiro programado para una persona, 
