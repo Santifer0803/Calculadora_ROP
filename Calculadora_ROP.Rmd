@@ -1,0 +1,197 @@
+---
+title: "Calculadora ROP"
+author: "Alejandro Brenes, Santiago Fernández, Eyeri Méndez y Erick Venegas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Librerías
+
+Se cargan las librerías necesarias para el desarrollo de la calculadora.
+
+```{r librerias, message = FALSE, warning = FALSE}
+pacman::p_load(readxl)
+```
+
+# Datos de las unidades de pensión
+
+Se cargan los datos de la VANU para cada sexo y se extraen sus valores.
+
+```{r datos_VANU, message = FALSE, warning = FALSE}
+vanu.h <- read_excel("data/VANUs 2025.xlsx", sheet = "VANU H")
+vanu.m <- read_excel("data/VANUs 2025.xlsx", sheet = "VANU M")
+
+vanu.h <- as.vector(t(vanu.h[9, 4:length(vanu.h)]))
+vanu.m <- as.vector(t(vanu.m[9, 4:length(vanu.m)]))
+```
+
+# Modalidades de retiro
+
+En esta sección se implementarán diversas funciones para calcular el monto de la pensión de una persona, según cada modalidad de retiro y dados los datos necesarios para el cálculo.
+
+Para esto, se usa una tasa de interés/rendimiento del 3.6%, según el reglamento de la SUPEN.
+
+Además, hay que tener en cuenta que si el monto de la pensión es menor al 20% de la pensión mínima del IVM, se otorga ese monto hasta agotar el fondo.
+
+```{r supuestos}
+r <- 0.036
+
+monto.min <- 31938.44
+```
+
+## Retiro programado
+
+En esta modalidad de pensión la persona acuerda recibir una renta periódica que surge de dividir, cada año, el monto acumulado del pensionado entre la VANU correspondiente.
+
+```{r retiro_prgrmd}
+#' @description Función que simula la modalidad de retiro programado para una persona, 
+#' calculando la pensión mensual con base en el monto acumulado, el sexo y la edad de retiro.
+#'
+#' @param monto.acum Monto acumulado en el fondo de pensiones al momento de la jubilación.
+#' @param sexo Sexo del afiliado. Puede ser "Hombre"/"Masculino" o "Mujer"/"Femenino".
+#' @param edad Edad del afiliado al iniciar el retiro programado.
+#'
+#' @return Un DataFrame con dos columnas: 
+#'          edad: la edad del afiliado en cada año.
+#'          pension: el valor de la pensión mensual pagada a esa edad (osea en ese año).
+#'
+retiro.prgrmd <- function(monto.acum, sexo, edad){
+  
+  # Se selecciona el vector de VANUs dependiendo del sexo
+  if(sexo == "Hombre" | sexo == "Masculino"){
+    
+    vanu <- vanu.h
+    
+  } else if(sexo == "Mujer" | sexo == "Femenino"){
+    
+    vanu <- vanu.m
+    
+  } else{
+    
+    stop("El sexo digitado no es válido")
+    
+  }
+  
+  # Se inicializa el vector con las edades
+  vector.edades <- c(edad)
+  
+  # Se calcula el monto de la pensión bajo esta modalidad
+  pension <- ifelse((monto.acum / vanu[edad+1]) < monto.min, 
+                    monto.min, monto.acum / vanu[edad+1])
+  
+  # Se inicializa el vector con las pensiones
+  vector.pensiones <- c(pension)
+  
+  # Se calculan los rendimientos
+  rends <- monto.acum * r - 12 * pension * r / 2
+  
+  # Se actualiza el monto acumulado (osea la reserva al final del año)
+  monto.acum <- ifelse((monto.acum + rends - 12*pension) < 0, 
+                    0, monto.acum + rends - 12*pension)
+  
+  # Se repite el proceso iterando año a año hasta que se agote el fondo acumulado 
+  # o el afiliado llegue a los 115 años
+  while(monto.acum > 0 & edad < 115){
+    
+    edad <- edad + 1
+
+    vector.edades <- c(vector.edades, edad)
+
+    pension <- ifelse((monto.acum / vanu[edad+1]) < monto.min, 
+                    monto.min, monto.acum / vanu[edad+1])
+
+    vector.pensiones <- c(vector.pensiones, pension)
+
+    rends <- monto.acum * r - 12 * pension * r / 2
+
+    monto.acum <- ifelse((monto.acum + rends - 12*pension) < 0, 
+                    0, monto.acum + rends - 12*pension)
+    
+  }
+  
+  # Se retorna en un DataFrame la edad y la pensión año a año
+  data.frame(edad = vector.edades, pension = vector.pensiones)
+  
+}
+```
+
+```{r ejemplo_a}
+a <- retiro.prgrmd(31024664.9, "Hombre", 65)
+```
+
+## Renta permanente
+
+Bajo esta modalidad de pensión el afiliado o beneficiario contrata con la operadora de pensiones un 
+plan, por medio del cual recibe el producto de los rendimientos de la inversión del monto acumulado para la pensión.
+
+```{r renta_prmnt}
+#' @description Función que simula la modalidad de renta permanente para una persona, 
+#' calculando la pensión mensual con base en el monto acumulado, la edad de retiro y
+#' los rendimientos de los últimos 3 años. Se realizan pagos de pensión fijos durante 
+#' períodos de tres años, y se ajusta el saldo del fondo con los rendimientos anuales. 
+#' Además, la pensión se recalcula cada tres años.
+#'
+#' @param monto.acum Monto acumulado en el fondo de pensiones al momento de la jubilación.
+#' @param edad Edad del afiliado al iniciar el retiro.
+#' @param rends.3a Vector con los rendimientos de los últimos tres años.
+#'
+#' @return Un DataFrame con dos columnas: 
+#'          edad: las edades desde la inicial hasta los 115 años.
+#'          pension: el valor de la pensión mensual pagada a esa edad (osea en ese año).
+#'
+renta.prmnt <- function(monto.acum, edad, rends.3a){
+  
+  # Se inicializa el vector que almacenará las pensiones mensuales
+  vector.pensiones <- c()
+  
+  # Variable auxiliar para controlar la edad durante la simulación
+  edad.aux <- edad
+  
+  # Se itera la edad en bloques de 3 años hasta los 115 años
+  while(edad.aux < 115){
+    
+    # Se calcula el monto de la pensión bajo esta modalidad
+    pension <- max((sum(rends.3a) / 36), monto.min)
+    
+    # Se agregan 3 años con la misma pensión al vector de pensiones
+    vector.pensiones <- c(vector.pensiones, rep(pension, 3))
+    
+    # Se reinicia el vector con los rendimientos de los últimos 3 años
+    rends.3a <- c()
+    
+    # Se calculan los rendimientos y se actualiza el monto acumulado para el primer año
+    rends <- monto.acum * r - 12 * pension * r / 2
+    rends.3a <- c(rends.3a, rends)
+    monto.acum <- monto.acum + rends - 12 * pension
+    
+    # Se repite el proceso para el segundo año
+    rends <- monto.acum * r - 12 * pension * r / 2
+    rends.3a <- c(rends.3a, rends)
+    monto.acum <- monto.acum + rends - 12 * pension
+    
+    # Y finalmente se repite el proceso para el tercer año
+    rends <- monto.acum * r - 12 * pension * r / 2
+    rends.3a <- c(rends.3a, rends)
+    monto.acum <- monto.acum + rends - 12 * pension
+    
+    # Se incrementa la edad en 3 años
+    edad.aux <- edad.aux + 3
+    
+  }
+  
+  # Se devuelve un DataFrame con las edades (de inicio a 115) y sus respectivas pensiones
+  data.frame(edad = edad:115, pension = vector.pensiones[1:(116-edad)])
+  
+}
+```
+
+```{r ejemplo_b}
+b <- renta.prmnt(34129284.04, 65, c(2924247.52, 3488962.82, 2856867.65))
+```
+
+## Renta temporal
+
+A
+
+
+
