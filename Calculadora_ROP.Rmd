@@ -21,8 +21,8 @@ Se cargan los datos sobrevivencia ($_tp_x$) para cada sexo y se extraen sus valo
 tpx.h <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia H")
 tpx.m <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia M")
 
-tpx.h <- tpx.h[12:nrow(tpx.h), 3:ncol(tpx.h)]
-tpx.m <- tpx.m[12:nrow(tpx.m), 3:ncol(tpx.m)]
+tpx.h <- tpx.h[12:(nrow(tpx.h) - 2), 3:ncol(tpx.h)]
+tpx.m <- tpx.m[12:(nrow(tpx.m) - 2), 3:ncol(tpx.m)]
 
 colnames(tpx.h) <- 1:ncol(tpx.h)
 colnames(tpx.m) <- 1:ncol(tpx.m)
@@ -68,7 +68,7 @@ calculo.vanu <- function(x, n, m, tpx){
     
     # Se calcula el VANU mensual para la edad correspondiente
     vanu <- c(vanu, 12 * (sum(tpx[1:n, edad+1] / (1 + r)^(0:(n-1))) - 
-      ((m-1) / (2*m)) * (1 - (tpx[n+1, edad+1]) / (1 + r)^n)))
+      ((m-1) / (2*m))))
     
   }
   
