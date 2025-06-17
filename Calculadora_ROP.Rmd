@@ -82,7 +82,7 @@ calculo.vanu <- function(x, n, m, tpx){
 
 En esta modalidad de pensión la persona acuerda recibir una renta periódica que surge de dividir, cada año, el monto acumulado del pensionado entre la VANU correspondiente.
 
-Primero se calculan las VANUs para hombres y mujeres bajo esta modalidad, en la cual el $n$ es la edad máxima (osea el $\omega$), que en este caso es 115.
+Primero se calculan las VANUs para hombres y mujeres bajo esta modalidad, en la cual el $n$ es la edad máxima (es decir el $\omega$), que en este caso es 115.
 
 ```{r VANUs_retiro_prgrmd}
 vanu.h <- calculo.vanu(c(0:115), 115, 12, tpx.h)
