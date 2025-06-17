@@ -102,6 +102,7 @@ Postriormente se crea la función.
 #' @return Un DataFrame con dos columnas: 
 #'          edad: la edad del afiliado en cada año.
 #'          pension: el valor de la pensión mensual pagada a esa edad (osea en ese año).
+#'          reserva.final: el valor de la reserva al final de cada edad/año.
 #'
 retiro.prgrmd <- function(monto.acum, sexo, edad){
   
@@ -127,7 +128,7 @@ retiro.prgrmd <- function(monto.acum, sexo, edad){
   pension <- ifelse((monto.acum / vanu[edad+1]) < monto.min, 
                     monto.min, monto.acum / vanu[edad+1])
   
-  # Se inicializa el vector con las pensiones
+  # Se inicializa el vector que almacenará la pensión mensual cada año
   vector.pensiones <- c(pension)
   
   # Se calculan los rendimientos
@@ -136,6 +137,9 @@ retiro.prgrmd <- function(monto.acum, sexo, edad){
   # Se actualiza el monto acumulado (osea la reserva al final del año)
   monto.acum <- ifelse((monto.acum + rends - 12*pension) < 0, 
                     0, monto.acum + rends - 12*pension)
+  
+  # Se inicializa el vector con la reserva al final de cada año
+  vector.reservas <- c(monto.acum)
   
   # Se repite el proceso iterando año a año hasta que se agote el fondo acumulado 
   # o el afiliado llegue a los 115 años
@@ -155,10 +159,13 @@ retiro.prgrmd <- function(monto.acum, sexo, edad){
     monto.acum <- ifelse((monto.acum + rends - 12*pension) < 0, 
                     0, monto.acum + rends - 12*pension)
     
+    vector.reservas <- c(vector.reservas, monto.acum)
+    
   }
   
   # Se retorna en un DataFrame la edad y la pensión año a año
-  data.frame(edad = vector.edades, pension = vector.pensiones)
+  data.frame(edad = vector.edades, pension = vector.pensiones, 
+             reserva.final = vector.reservas)
   
 }
 ```
@@ -186,11 +193,15 @@ plan, por medio del cual recibe el producto de los rendimientos de la inversión
 #' @return Un DataFrame con dos columnas: 
 #'          edad: las edades desde la inicial hasta los 115 años.
 #'          pension: el valor de la pensión mensual pagada a esa edad (osea en ese año).
+#'          reserva.final: el valor de la reserva al final de cada edad/año.
 #'
 renta.prmnt <- function(monto.acum, edad, rends.3a){
   
   # Se inicializa el vector que almacenará las pensiones mensuales
   vector.pensiones <- c()
+  
+  # Se inicializa el vector con la reserva al final de cada año
+  vector.reservas <- c()
   
   # Variable auxiliar para controlar la edad durante la simulación
   edad.aux <- edad
@@ -212,15 +223,20 @@ renta.prmnt <- function(monto.acum, edad, rends.3a){
     rends.3a <- c(rends.3a, rends)
     monto.acum <- monto.acum + rends - 12 * pension
     
+    # Se guarda la reserva al final del primer año
+    vector.reservas <- c(vector.reservas, monto.acum)
+    
     # Se repite el proceso para el segundo año
     rends <- monto.acum * r - 12 * pension * r / 2
     rends.3a <- c(rends.3a, rends)
     monto.acum <- monto.acum + rends - 12 * pension
+    vector.reservas <- c(vector.reservas, monto.acum)
     
     # Y finalmente se repite el proceso para el tercer año
     rends <- monto.acum * r - 12 * pension * r / 2
     rends.3a <- c(rends.3a, rends)
     monto.acum <- monto.acum + rends - 12 * pension
+    vector.reservas <- c(vector.reservas, monto.acum)
     
     # Se incrementa la edad en 3 años
     edad.aux <- edad.aux + 3
@@ -228,7 +244,8 @@ renta.prmnt <- function(monto.acum, edad, rends.3a){
   }
   
   # Se devuelve un DataFrame con las edades (de inicio a 115) y sus respectivas pensiones
-  data.frame(edad = edad:115, pension = vector.pensiones[1:(116-edad)])
+  data.frame(edad = edad:115, pension = vector.pensiones[1:(116-edad)],
+             reserva.final = vector.reservas)
   
 }
 ```
