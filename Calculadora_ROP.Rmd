@@ -308,7 +308,7 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     pension.por.renta.temp <- capital.disp / vanu  
 
     # se compara con al pensión mínima
-  pension <- ifelse(pension.por.renta.temp < 30638.35, 30638.35, pension.por.renta.temp)
+  pension <- ifelse(pension.por.renta.temp < monto.min, monto.min, pension.por.renta.temp)
     
     pension.anual <- pension * 12
     pension.anual <- min(pension.anual, capital.disp)  # para evitar pensiones > capital
@@ -339,7 +339,7 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
 ```
 
 ```{r ejemplo_c}
-c <- renta.tmprl(123456789.69420,"Mujer",65)
+c <- renta.tmprl(123456789,"Mujer",65)
 
 ```
 
