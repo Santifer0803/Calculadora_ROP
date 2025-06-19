@@ -21,8 +21,8 @@ Se cargan los datos sobrevivencia ($_tp_x$) para cada sexo y se extraen sus valo
 tpx.h <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia H")
 tpx.m <- read_excel("data/VANUs 2025.xlsx", sheet = "Sobrevivencia M")
 
-tpx.h <- tpx.h[12:(nrow(tpx.h) - 2), 3:ncol(tpx.h)]
-tpx.m <- tpx.m[12:(nrow(tpx.m) - 2), 3:ncol(tpx.m)]
+tpx.h <- tpx.h[12:(nrow(tpx.h)), 3:ncol(tpx.h)]
+tpx.m <- tpx.m[12:(nrow(tpx.m)), 3:ncol(tpx.m)]
 
 colnames(tpx.h) <- 1:ncol(tpx.h)
 colnames(tpx.m) <- 1:ncol(tpx.m)
@@ -255,8 +255,92 @@ b <- renta.prmnt(34129284.04, 65, c(2924247.52, 3488962.82, 2856867.65))
 ```
 
 ## Renta temporal
+Por medio de esta modalidad el pensionado contrata un plan que surge de dividir, cada año, el capital para la pensión entre el período comprendido entre la fecha de pensión y la expectativa de vida condicionada definida en la tabla de mortalidad vigente al momento de pensionarse.
 
-A
+Básicamente la persona empieza con un tiempo de vida restante. Entonces cada año se tiene un capital disponible y la pensión mensual es ese capital entre el vanu para esa edad proyectado a la cantidad de años disponible. Si la persona sobreviviera más de los años proyectados se le da todo el capital que sobró.
+```{r renta.tmprl}
+#' @description Función que simula la modalidad de renta temporal hasta la expectativa de vida,
+#'              calculando la pensión mensual con base en el monto acumulado, el sexo y la edad 
+#'              del afiliado. Usa VANU para distribuir el capital durante la esperanza de vida.
+#'
+#' @param capital.disp Monto acumulado en el fondo de pensiones al momento de la jubilación.
+#' @param sexo Sexo del afiliado. Puede ser "Hombre"/"Masculino" o "Mujer"/"Femenino".
+#' @param edad Edad del afiliado al momento del retiro.
+#'
+#' @return Un data.frame con:
+#'         edad: edad año a año desde la jubilación.
+#'         pension: monto mensual otorgado en ese año.
+#'         capital_disponible: capital restante al final de cada año.
+renta.tmprl <- function(capital.disp, sexo, edad) {
+  
+  # Selección de tabla de supervivencia
+  if (sexo == "Hombre" | sexo == "Masculino") {
+    tpx <- tpx.h
+  } else if (sexo == "Mujer" | sexo == "Femenino") {
+    tpx <- tpx.m
+  } else {
+    stop("El sexo digitado no es válido")
+  }
 
+  # Se obtienen los años esperados residuales de la persona (datos que están en la fila 118 de los dataframes)
+  esperanza.restante <- round(as.numeric(tpx[118, edad]))
+
+  # estos son los vectores que almacenarán la información
+  vector.edades <- edad:(edad+esperanza.restante)
+  vector.pensiones <- numeric(length(vector.edades))
+  vector.capitales <- numeric(length(vector.edades))
+
+  for (i in 1:(esperanza.restante + 1)) {
+
+    edad.actual <- vector.edades[i]
+    
+    # si el capital se agota, la pensión es cero
+    if (capital.disp <= 0) {
+      vector.pensiones[i] <- 0
+      vector.capitales[i] <- 0
+      next
+    }
+    
+    # VANU para la edad actual
+    n <- esperanza.restante - i 
+    vanu <- calculo.vanu(edad.actual, n, 12, tpx)
+    
+    pension.por.renta.temp <- capital.disp / vanu  
+
+    # se compara con al pensión mínima
+  pension <- ifelse(pension.por.renta.temp < 30638.35, 30638.35, pension.por.renta.temp)
+    
+    pension.anual <- pension * 12
+    pension.anual <- min(pension.anual, capital.disp)  # para evitar pensiones > capital
+    
+    # se guardan los datos
+    vector.pensiones[i] <- pension
+    capital.disp <- capital.disp - pension.anual
+    vector.capitales[i] <- capital.disp
+  }
+
+  # si llegara a pasar q la persona sobrevive más de la esperanza de vida:
+  capital.restante <- vector.capitales[length(vector.capitales)]
+  if (capital.restante > 0) {
+    edad.extra <- edad+esperanza.restante + 1
+    vector.edades <- c(vector.edades, edad.extra)
+    vector.pensiones <- c(vector.pensiones, capital.restante / 12)
+    vector.capitales <- c(vector.capitales, 0)
+  }
+
+  return(data.frame(
+    edad = vector.edades,
+    pension = vector.pensiones,
+    capital_disponible = vector.capitales
+  ))
+}
+
+
+```
+
+```{r ejemplo_c}
+c <- renta.tmprl(123456789.69420,"Mujer",65)
+
+```
 
 
