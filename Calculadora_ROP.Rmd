@@ -68,7 +68,7 @@ calculo.vanu <- function(x, n, m, tpx){
     
     # Se calcula el VANU mensual para la edad correspondiente
     vanu <- c(vanu, 12 * (sum(tpx[1:n, edad+1] / (1 + r)^(0:(n-1))) - 
-      ((m-1) / (2*m))))
+      ((m-1) / (2*m) * (1-(tpx[n+1, edad+1]/((1+r)^n))))))
     
   }
   
@@ -270,7 +270,9 @@ Básicamente la persona empieza con un tiempo de vida restante. Entonces cada a�
 #' @return Un data.frame con:
 #'         edad: edad año a año desde la jubilación.
 #'         pension: monto mensual otorgado en ese año.
-#'         capital_disponible: capital restante al final de cada año.
+#'         rendimientos: los rendimientos del año.
+#'         reserva_final: capital restante al final de cada año.
+
 renta.tmprl <- function(capital.disp, sexo, edad) {
   
   # Selección de tabla de supervivencia
@@ -282,65 +284,65 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     stop("El sexo digitado no es válido")
   }
 
-  # Se obtienen los años esperados residuales de la persona (datos que están en la fila 118 de los dataframes)
   esperanza.restante <- round(as.numeric(tpx[118, edad]))
 
-  # estos son los vectores que almacenarán la información
-  vector.edades <- edad:(edad+esperanza.restante)
+  vector.edades <- edad:(edad + esperanza.restante)
   vector.pensiones <- numeric(length(vector.edades))
   vector.capitales <- numeric(length(vector.edades))
+  vector.rendimientos <- numeric(length(vector.edades))
 
   for (i in 1:(esperanza.restante + 1)) {
-
+    
     edad.actual <- vector.edades[i]
     
-    # si el capital se agota, la pensión es cero
     if (capital.disp <= 0) {
       vector.pensiones[i] <- 0
       vector.capitales[i] <- 0
       next
     }
     
-    # VANU para la edad actual
-    n <- esperanza.restante - i 
+    # VANU y pensión
+    n <- esperanza.restante - i
     vanu <- calculo.vanu(edad.actual, n, 12, tpx)
     
-    pension.por.renta.temp <- capital.disp / vanu  
-
-    # se compara con al pensión mínima
-  pension <- ifelse(pension.por.renta.temp < monto.min, monto.min, pension.por.renta.temp)
-    
-    pension.anual <- pension * 12
-    pension.anual <- min(pension.anual, capital.disp)  # para evitar pensiones > capital
-    
-    # se guardan los datos
+    pension.por.renta.temp <- capital.disp / vanu
+    pension <- ifelse(pension.por.renta.temp < monto.min, monto.min, pension.por.renta.temp)
     vector.pensiones[i] <- pension
-    capital.disp <- capital.disp - pension.anual
+    
+    # cálculo de rendimiento
+    rendimiento <- capital.disp * r - 12 * pension * (r / 2)
+    vector.rendimientos[i] <- rendimiento
+    
+    # nuevo capital disponible
+    nuevo.capital <- capital.disp + rendimiento - 12 * pension
+    capital.disp <- max(0, nuevo.capital)
     vector.capitales[i] <- capital.disp
   }
 
-  # si llegara a pasar q la persona sobrevive más de la esperanza de vida:
+  # si la persona sobrevive más de la esperanza de vida:
   capital.restante <- vector.capitales[length(vector.capitales)]
   if (capital.restante > 0) {
-    edad.extra <- edad+esperanza.restante + 1
+    edad.extra <- edad + esperanza.restante + 1
     vector.edades <- c(vector.edades, edad.extra)
     vector.pensiones <- c(vector.pensiones, capital.restante / 12)
     vector.capitales <- c(vector.capitales, 0)
+    vector.rendimientos <- c(vector.rendimientos, (capital.restante)*r-12*(capital.restante / 12)*r/2)
   }
 
   return(data.frame(
     edad = vector.edades,
     pension = vector.pensiones,
-    capital_disponible = vector.capitales
+    rendimientos = vector.rendimientos,
+    reserva_final = vector.capitales
   ))
 }
+
 
 
 ```
 
 ```{r ejemplo_c}
-c <- renta.tmprl(123456789,"Mujer",65)
-
+c <- renta.tmprl(82589370.14,"Hombre",65)
 ```
 
 
