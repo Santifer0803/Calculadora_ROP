@@ -284,7 +284,7 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     stop("El sexo digitado no es válido")
   }
 
-  esperanza.restante <- round(as.numeric(tpx[118, edad]))
+  esperanza.restante <- ceiling(as.numeric(tpx[118, edad + 1]))
 
   vector.edades <- edad:(edad + esperanza.restante)
   vector.pensiones <- numeric(length(vector.edades))
@@ -302,7 +302,7 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     }
     
     # VANU y pensión
-    n <- esperanza.restante - i
+    n <- esperanza.restante - i + 1
     vanu <- calculo.vanu(edad.actual, n, 12, tpx)
     
     pension.por.renta.temp <- capital.disp / vanu
