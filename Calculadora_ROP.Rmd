@@ -333,7 +333,7 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     edad = vector.edades,
     pension = vector.pensiones,
     rendimientos = vector.rendimientos,
-    reserva_final = vector.capitales
+    reserva.final = vector.capitales
   ))
 }
 ```
