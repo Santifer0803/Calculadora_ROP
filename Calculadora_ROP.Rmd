@@ -10,7 +10,7 @@ output: html_document
 Se cargan las librerías necesarias para el desarrollo de la calculadora.
 
 ```{r librerias, message = FALSE, warning = FALSE}
-pacman::p_load(readxl)
+pacman::p_load(readxl, ggplot2, shiny)
 ```
 
 # Datos de sobrevivencia
@@ -336,13 +336,97 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     reserva_final = vector.capitales
   ))
 }
-
-
-
 ```
 
 ```{r ejemplo_c}
 c <- renta.tmprl(82589370.14,"Hombre",65)
 ```
 
+# Interfaz
+
+```{r}
+ui <- fluidPage(
+  titlePanel("ROP - Modalidades de Retiro"),
+
+  sidebarLayout(
+    sidebarPanel(
+      numericInput("monto", "Monto acumulado:", value = 30000000, min = 0),
+      numericInput("edad", "Edad actual:", value = 65, min = 0, max = 115),
+      selectInput("sexo", "Sexo:", choices = c("Hombre", "Mujer")),
+      selectInput("modalidad", "Modalidad de retiro:", 
+                  choices = c("Retiro Programado", "Renta Permanente", "Renta Temporal")),
+      conditionalPanel(
+        condition = "input.modalidad == 'Renta Permanente'",
+        numericInput("rend1", "Rendimiento Año 1:", value = 2500000),
+        numericInput("rend2", "Rendimiento Año 2:", value = 2700000),
+        numericInput("rend3", "Rendimiento Año 3:", value = 2900000)
+      )
+    ),
+    
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Tabla", tableOutput("tabla_resultados")),
+        tabPanel("Gráficos", 
+                 plotOutput("grafico_pension"),
+                 plotOutput("grafico_reserva"))
+      )
+    )
+  )
+)
+```
+
+
+# Servidor
+
+```{r}
+server <- function(input, output, session) {
+
+  observe({
+      if (!is.null(input$edad) && !is.na(input$edad)) {
+        if (input$edad < 0) {
+          updateNumericInput(session, "edad", value = 0)
+        } else if (input$edad > 115) {
+          updateNumericInput(session, "edad", value = 115)
+        }
+      }
+    })
+  
+  resultado <- reactive({
+    tryCatch({
+      if (input$modalidad == "Retiro Programado") {
+        retiro.prgrmd(input$monto, input$sexo, input$edad)
+      } else if (input$modalidad == "Renta Permanente") {
+        renta.prmnt(input$monto, input$edad, c(input$rend1, input$rend2, input$rend3))
+      } else {
+        renta.tmprl(input$monto, input$sexo, input$edad)
+      }
+    }, error = function(e) {
+      data.frame(edad = numeric(0), pension = numeric(0), reserva.final = numeric(0))
+    })
+  })
+
+  output$tabla_resultados <- renderTable({
+    resultado()
+  })
+
+  output$grafico_pension <- renderPlot({
+    df <- resultado()
+    ggplot(df, aes(x = edad, y = pension)) +
+      geom_line(color = "blue", size = 1.2) +
+      labs(title = "Evolución de la Pensión Mensual", x = "Edad", y = "Pensión")
+  })
+
+  output$grafico_reserva <- renderPlot({
+    df <- resultado()
+    ggplot(df, aes(x = edad, y = reserva.final)) +
+      geom_line(color = "darkgreen", size = 1.2) +
+      labs(title = "Evolución de la Reserva", x = "Edad", y = "Reserva final")
+  })
+}
+```
+
+
+```{r}
+shinyApp(ui = ui, server = server)
+```
 
