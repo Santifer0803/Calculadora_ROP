@@ -10,7 +10,7 @@ output: html_document
 Se cargan las librerías necesarias para el desarrollo de la calculadora.
 
 ```{r librerias, message = FALSE, warning = FALSE}
-pacman::p_load(ggplot2, plotly, readxl, shiny)
+pacman::p_load(bslib, ggplot2, plotly, readxl, shiny)
 ```
 
 # Datos de sobrevivencia
@@ -245,7 +245,7 @@ renta.prmnt <- function(monto.acum, edad, rends.3a){
   
   # Se devuelve un DataFrame con las edades (de inicio a 115) y sus respectivas pensiones
   data.frame(edad = edad:115, pension = vector.pensiones[1:(116-edad)],
-             reserva.final = vector.reservas)
+             reserva.final = vector.reservas[1:(116-edad)])
   
 }
 ```
@@ -345,41 +345,53 @@ c <- renta.tmprl(82589370.14,"Hombre",65)
 # Interfaz
 
 ```{r}
-ui <- fluidPage(titlePanel("ROP - Modalidades de Retiro"),
-                
-                sidebarLayout(
-                  sidebarPanel(
-                    numericInput("monto", "Monto acumulado:", value = 30000000, min = 16137),
-                    numericInput(
-                      "edad",
-                      "Edad actual:",
-                      value = 65,
-                      min = 15,
-                      max = 115
-                    ),
-                    selectInput("sexo", "Sexo:", choices = c("Hombre", "Mujer")),
-                    selectInput(
-                      "modalidad",
-                      "Modalidad de retiro:",
-                      choices = c("Retiro Programado", "Renta Permanente", "Renta Temporal")
-                    ),
-                    conditionalPanel(
-                      condition = "input.modalidad == 'Renta Permanente'",
-                      numericInput("rend1", "Rendimiento Año 1:", value = 2500000),
-                      numericInput("rend2", "Rendimiento Año 2:", value = 2700000),
-                      numericInput("rend3", "Rendimiento Año 3:", value = 2900000)
-                    )
-                  ),
-                  
-                  mainPanel(tabsetPanel(
-                    tabPanel("Tabla", tableOutput("tabla_resultados")),
-                    tabPanel(
-                      "Gráficos",
-                      plotlyOutput("grafico_pension"),
-                      plotlyOutput("grafico_reserva")
-                    )
-                  ))
-                ))
+ui <- fluidPage(
+  titlePanel("ROP - Modalidades de Retiro"),
+  
+  theme = bs_theme(
+    bg = "#101010",
+    fg = "#FFFFFF",
+    primary = "#E69F00",
+    secondary = "#0072B2",
+    success = "#009E73",
+    base_font = font_google("Prompt"),
+    code_font = font_google("JetBrains Mono")
+  ),
+  
+  sidebarLayout(
+    sidebarPanel(
+      numericInput("monto", "Monto acumulado:", value = 30000000, min = 16137),
+      numericInput(
+        "edad",
+        "Edad actual:",
+        value = 65,
+        min = 15,
+        max = 115
+      ),
+      selectInput("sexo", "Sexo:", choices = c("Hombre", "Mujer")),
+      selectInput(
+        "modalidad",
+        "Modalidad de retiro:",
+        choices = c("Retiro Programado", "Renta Permanente", "Renta Temporal")
+      ),
+      conditionalPanel(
+        condition = "input.modalidad == 'Renta Permanente'",
+        numericInput("rend1", "Rendimiento Año 1:", value = 2500000),
+        numericInput("rend2", "Rendimiento Año 2:", value = 2700000),
+        numericInput("rend3", "Rendimiento Año 3:", value = 2900000)
+      )
+    ),
+    
+    mainPanel(tabsetPanel(
+      tabPanel("Tabla", tableOutput("tabla_resultados")),
+      tabPanel(
+        "Gráficos",
+        plotlyOutput("grafico_pension"),
+        plotlyOutput("grafico_reserva")
+      )
+    ))
+  )
+)
 ```
 
 
