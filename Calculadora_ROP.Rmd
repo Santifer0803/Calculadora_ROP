@@ -13,8 +13,10 @@ Se cargan las librerías necesarias para el desarrollo de la calculadora.
 pacman::p_load(bslib, bsicons, ggplot2, plotly, readxl, shiny)
 ```
 
-```{r}
-bs_theme_preview()
+El siguiente comando permite ver una aplicación de prueba y configurar los colores, las fuentes y todo lo estético. Se pone comentado porque ya no se ocupa.
+
+```{r pruebas_tema}
+# bs_theme_preview()
 ```
 
 
@@ -354,11 +356,10 @@ ui <- fluidPage(
   titlePanel("ROP - Modalidades de Retiro"),
   
   theme = bs_theme(
-    bg = "#101010",
-    fg = "#FFFFFF",
-    primary = "#E69F00",
-    base_font = font_google("Prompt"),
-    code_font = font_google("JetBrains Mono")
+    bg = "#F2FBFC",
+    fg = "#08783D",
+    primary = "#9ED9CC",
+    base_font = font_google("Roboto")
   ),
   
   sidebarLayout(
