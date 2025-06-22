@@ -10,8 +10,13 @@ output: html_document
 Se cargan las librerías necesarias para el desarrollo de la calculadora.
 
 ```{r librerias, message = FALSE, warning = FALSE}
-pacman::p_load(bslib, ggplot2, plotly, readxl, shiny)
+pacman::p_load(bslib, bsicons, ggplot2, plotly, readxl, shiny)
 ```
+
+```{r}
+bs_theme_preview()
+```
+
 
 # Datos de sobrevivencia
 
@@ -143,7 +148,7 @@ retiro.prgrmd <- function(monto.acum, sexo, edad){
   
   # Se repite el proceso iterando año a año hasta que se agote el fondo acumulado 
   # o el afiliado llegue a los 115 años
-  while(monto.acum > 0 & edad < 115){
+  while(monto.acum > 0 & edad <= 115){
     
     edad <- edad + 1
 
@@ -207,7 +212,7 @@ renta.prmnt <- function(monto.acum, edad, rends.3a){
   edad.aux <- edad
   
   # Se itera la edad en bloques de 3 años hasta los 115 años
-  while(edad.aux < 115){
+  while(edad.aux <= 115){
     
     # Se calcula el monto de la pensión bajo esta modalidad
     pension <- max((sum(rends.3a) / 36), monto.min)
@@ -352,8 +357,6 @@ ui <- fluidPage(
     bg = "#101010",
     fg = "#FFFFFF",
     primary = "#E69F00",
-    secondary = "#0072B2",
-    success = "#009E73",
     base_font = font_google("Prompt"),
     code_font = font_google("JetBrains Mono")
   ),
