@@ -349,7 +349,7 @@ ui <- fluidPage(titlePanel("ROP - Modalidades de Retiro"),
                 
                 sidebarLayout(
                   sidebarPanel(
-                    numericInput("monto", "Monto acumulado:", value = 30000000, min = 0),
+                    numericInput("monto", "Monto acumulado:", value = 30000000, min = 16137),
                     numericInput(
                       "edad",
                       "Edad actual:",
@@ -388,20 +388,24 @@ ui <- fluidPage(titlePanel("ROP - Modalidades de Retiro"),
 ```{r}
 server <- function(input, output, session) {
   observe({
-    if (!is.null(input$edad) && !is.na(input$edad)) {
+    if (!is.null(input$edad) && !is.na(input$edad) && is.numeric(input$edad)) {
       if (input$edad < 15) {
         updateNumericInput(session, "edad", value = 15)
       } else if (input$edad > 115) {
         updateNumericInput(session, "edad", value = 115)
       }
+    } else{
+      updateNumericInput(session, "edad", value = 65)
     }
   })
   
   observe({
-    if (!is.null(input$monto) && !is.na(input$monto)) {
+    if (!is.null(input$monto) && !is.na(input$monto) && is.numeric(input$monto)) {
       if (input$monto < 0) {
         updateNumericInput(session, "monto", value = 0)
       }
+    } else{
+      updateNumericInput(session, "monto", value = 30000000)
     }
   })
   
