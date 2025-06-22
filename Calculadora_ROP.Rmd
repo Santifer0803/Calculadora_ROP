@@ -10,7 +10,13 @@ output: html_document
 Se cargan las librerías necesarias para el desarrollo de la calculadora.
 
 ```{r librerias, message = FALSE, warning = FALSE}
-pacman::p_load(bslib, bsicons, ggplot2, plotly, readxl, shiny)
+pacman::p_load(bslib,
+               bsicons,
+               DT,
+               ggplot2,
+               plotly,
+               readxl,
+               shiny)
 ```
 
 El siguiente comando permite ver una aplicación de prueba y configurar los colores, las fuentes y todo lo estético. Se pone comentado porque ya no se ocupa.
@@ -387,7 +393,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(tabsetPanel(
-      tabPanel("Tabla", tableOutput("tabla_resultados")),
+      tabPanel("Tabla", dataTableOutput("tabla_resultados")),
       tabPanel(
         "Gráficos",
         plotlyOutput("grafico_pension"),
@@ -404,7 +410,8 @@ ui <- fluidPage(
 ```{r}
 server <- function(input, output, session) {
   observe({
-    if (!is.null(input$edad) && !is.na(input$edad) && is.numeric(input$edad)) {
+    if (!is.null(input$edad) &&
+        !is.na(input$edad) && is.numeric(input$edad)) {
       if (input$edad < 15) {
         updateNumericInput(session, "edad", value = 15)
       } else if (input$edad > 115) {
@@ -416,7 +423,8 @@ server <- function(input, output, session) {
   })
   
   observe({
-    if (!is.null(input$monto) && !is.na(input$monto) && is.numeric(input$monto)) {
+    if (!is.null(input$monto) &&
+        !is.na(input$monto) && is.numeric(input$monto)) {
       if (input$monto < 0) {
         updateNumericInput(session, "monto", value = 0)
       }
@@ -445,15 +453,29 @@ server <- function(input, output, session) {
     })
   })
   
-  output$tabla_resultados <- renderTable({
-    resultado()
+  output$tabla_resultados <- renderDataTable({
+    df <- resultado()
+    
+    if ((input$modalidad == "Retiro Programado") ||
+        (input$modalidad == "Renta Permanente")) {
+      names(df) <- c("Edad", "Pensión", "Reserva final")
+    } else{
+      names(df) <- c("Edad", "Pensión", "Rendimientos", "Reserva final")
+    }
+    
+    df <- datatable(df, language = language$es, rownames = FALSE) %>%
+      formatStyle(columns = names(df),
+                  fontWeight = 'bold',
+                  target = 'header')
+    
+    df
   })
   
   output$grafico_pension <- renderPlotly({
     df <- resultado()
     
     fig <- ggplot(df, aes(x = edad, y = pension)) +
-      geom_line(color = "blue", size = 1.2) +
+      geom_line(color = "#18A777", linewidth = 1.2) +
       labs(title = "Evolución de la Pensión Mensual", x = "Edad", y = "Pensión")
     
     ggplotly(fig)
@@ -463,7 +485,7 @@ server <- function(input, output, session) {
     df <- resultado()
     
     fig <- ggplot(df, aes(x = edad, y = reserva.final)) +
-      geom_line(color = "darkgreen", size = 1.2) +
+      geom_line(color = "#18A777", linewidth = 1.2) +
       labs(title = "Evolución de la Reserva", x = "Edad", y = "Reserva final")
     
     ggplotly(fig)
