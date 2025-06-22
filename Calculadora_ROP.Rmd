@@ -351,7 +351,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       numericInput("monto", "Monto acumulado:", value = 30000000, min = 0),
-      numericInput("edad", "Edad actual:", value = 65, min = 0, max = 115),
+      numericInput("edad", "Edad actual:", value = 65, min = 15, max = 115),
       selectInput("sexo", "Sexo:", choices = c("Hombre", "Mujer")),
       selectInput("modalidad", "Modalidad de retiro:", 
                   choices = c("Retiro Programado", "Renta Permanente", "Renta Temporal")),
@@ -383,8 +383,18 @@ server <- function(input, output, session) {
 
   observe({
       if (!is.null(input$edad) && !is.na(input$edad)) {
-        if (input$edad < 0) {
-          updateNumericInput(session, "edad", value = 0)
+        if (input$edad < 15) {
+          updateNumericInput(session, "edad", value = 15)
+        } else if (input$edad > 115) {
+          updateNumericInput(session, "edad", value = 115)
+        }
+      }
+    })
+  
+  observe({
+      if (!is.null(input$monto) && !is.na(input$monto)) {
+        if (input$monto < 0) {
+          updateNumericInput(session, "monto", value = 0)
         } else if (input$edad > 115) {
           updateNumericInput(session, "edad", value = 115)
         }
