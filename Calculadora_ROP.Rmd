@@ -463,12 +463,14 @@ server <- function(input, output, session) {
       names(df) <- c("Edad", "Pensión", "Rendimientos", "Reserva final")
     }
     
-    df <- datatable(df, language = language$es, rownames = FALSE) %>%
-      formatStyle(columns = names(df),
-                  fontWeight = 'bold',
-                  target = 'header')
-    
-    df
+    datatable(df,
+              extensions = 'Buttons',
+              options = list(
+                dom = 'Blfrtip',
+                buttons = c("excel"),
+                language = list(url = '//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json')
+              ),
+              rownames = FALSE)
   })
   
   output$grafico_pension <- renderPlotly({
