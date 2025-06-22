@@ -214,6 +214,12 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
     vector.rendimientos <- c(vector.rendimientos, (capital.restante)*r-12*(capital.restante / 12)*r/2)
   }
   
+  # Se quita el 0 final
+  vector.edades <- vector.edades[-length(vector.edades)]
+  vector.pensiones <- vector.pensiones[-length(vector.pensiones)]
+  vector.rendimientos <- vector.rendimientos[-length(vector.rendimientos)]
+  vector.capitales <- vector.capitales[-length(vector.capitales)]
+  
   return(data.frame(
     edad = vector.edades,
     pension = vector.pensiones,
