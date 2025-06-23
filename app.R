@@ -309,15 +309,21 @@ server <- function(input, output, session) {
               !is.na(input$rend1) && is.numeric(input$rend1) && !is.null(input$rend2) &&
               !is.na(input$rend2) && is.numeric(input$rend2) && !is.null(input$rend3) &&
               !is.na(input$rend3) && is.numeric(input$rend3)) {
-            if (input$rend1 < 0 || input$rend2 < 0 || input$rend3 < 0) {
+            if (input$rend1 < 0) {
               updateNumericInput(session, "rend1", value = 0)
+            } else if (input$rend2 < 0) {
               updateNumericInput(session, "rend2", value = 0)
+            } else if (input$rend3 < 0) {
               updateNumericInput(session, "rend3", value = 0)
             }
-          } else{
-            updateNumericInput(session, "rend1", value = 30000000)
-            updateNumericInput(session, "rend2", value = 30000000)
-            updateNumericInput(session, "rend3", value = 30000000)
+          } else if (is.null(input$rend1) ||
+                     is.na(input$rend1) || is.numeric(input$rend1)) {
+            updateNumericInput(session, "rend1", value = 3000000)
+          } else if (is.null(input$rend2) ||
+                     is.na(input$rend2) || is.numeric(input$rend2)) {
+            updateNumericInput(session, "rend1", value = 3000000)
+          } else {
+            updateNumericInput(session, "rend3", value = 3000000)
           }
         })
         
