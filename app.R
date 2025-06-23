@@ -223,7 +223,6 @@ renta.tmprl <- function(capital.disp, sexo, edad) {
   return(data.frame(
     edad = vector.edades,
     pension = vector.pensiones,
-    rendimientos = vector.rendimientos,
     reserva.final = vector.capitales
   ))
 }
@@ -305,6 +304,23 @@ server <- function(input, output, session) {
       if (input$modalidad == "Retiro Programado") {
         retiro.prgrmd(input$monto, input$sexo, input$edad)
       } else if (input$modalidad == "Renta Permanente") {
+        observe({
+          if (!is.null(input$rend1) &&
+              !is.na(input$rend1) && is.numeric(input$rend1) && !is.null(input$rend2) &&
+              !is.na(input$rend2) && is.numeric(input$rend2) && !is.null(input$rend3) &&
+              !is.na(input$rend3) && is.numeric(input$rend3)) {
+            if (input$rend1 < 0 || input$rend2 < 0 || input$rend3 < 0) {
+              updateNumericInput(session, "rend1", value = 0)
+              updateNumericInput(session, "rend2", value = 0)
+              updateNumericInput(session, "rend3", value = 0)
+            }
+          } else{
+            updateNumericInput(session, "rend1", value = 30000000)
+            updateNumericInput(session, "rend2", value = 30000000)
+            updateNumericInput(session, "rend3", value = 30000000)
+          }
+        })
+        
         renta.prmnt(input$monto,
                     input$edad,
                     c(input$rend1, input$rend2, input$rend3))
@@ -324,12 +340,7 @@ server <- function(input, output, session) {
     req(resultado)
     df <- resultado()
     
-    if ((input$modalidad == "Retiro Programado") ||
-        (input$modalidad == "Renta Permanente")) {
-      names(df) <- c("Edad", "Pensión", "Reserva final")
-    } else{
-      names(df) <- c("Edad", "Pensión", "Rendimientos", "Reserva final")
-    }
+    names(df) <- c("Edad", "Pensión", "Reserva final")
     
     datatable(df,
               rownames = FALSE,
