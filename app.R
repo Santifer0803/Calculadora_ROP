@@ -291,8 +291,8 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(input$monto) &&
         !is.na(input$monto) && is.numeric(input$monto)) {
-      if (input$monto < 0) {
-        updateNumericInput(session, "monto", value = 0)
+      if (input$monto <= 0) {
+        updateNumericInput(session, "monto", value = 16137)
       }
     } else{
       updateNumericInput(session, "monto", value = 30000000)
@@ -344,7 +344,7 @@ server <- function(input, output, session) {
   
   output$tabla_resultados <- renderDataTable({
     req(resultado)
-    df <- resultado()
+    df <- round(resultado(), 2)
     
     names(df) <- c("Edad", "Pensión", "Reserva final")
     
