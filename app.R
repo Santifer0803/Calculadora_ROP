@@ -314,28 +314,17 @@ server <- function(input, output, session) {
         retiro.prgrmd(input$monto, input$sexo, input$edad)
       } else if (input$modalidad == "Renta Permanente") {
         observe({
-          if (!is.null(input$rend1) &&
-              !is.na(input$rend1) &&
-              is.numeric(input$rend1) && !is.null(input$rend2) &&
-              !is.na(input$rend2) &&
-              is.numeric(input$rend2) && !is.null(input$rend3) &&
-              !is.na(input$rend3) && is.numeric(input$rend3)) {
-            if (input$rend1 < -100000000) {
-              updateNumericInput(session, "rend1", value = -100000000)
-            } else if (input$rend2 < -100000000) {
-              updateNumericInput(session, "rend2", value = -100000000)
-            } else if (input$rend3 < -100000000) {
-              updateNumericInput(session, "rend3", value = -100000000)
-            }
-          } else if (is.null(input$rend1) ||
+          if (is.null(input$rend1) ||
                      is.na(input$rend1) ||
-                     is.numeric(input$rend1)) {
+                     !is.numeric(input$rend1)) {
             updateNumericInput(session, "rend1", value = 3000000)
           } else if (is.null(input$rend2) ||
                      is.na(input$rend2) ||
-                     is.numeric(input$rend2)) {
-            updateNumericInput(session, "rend1", value = 3000000)
-          } else {
+                     !is.numeric(input$rend2)) {
+            updateNumericInput(session, "rend2", value = 3000000)
+          } else if (is.null(input$rend3) ||
+                     is.na(input$rend3) ||
+                     !is.numeric(input$rend3)){
             updateNumericInput(session, "rend3", value = 3000000)
           }
         })
